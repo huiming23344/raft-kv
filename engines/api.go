@@ -1,6 +1,6 @@
 package engines
 
-type Engine interface {
+type KvsEngine interface {
 
 	// Set the value of a string key to a string.
 	// If the key already exists, the previous value will be overwritten.

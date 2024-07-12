@@ -13,11 +13,11 @@ import (
 	"sync"
 )
 
+const CompactionThreshold uint64 = 1024 * 1024
+
 type CommandType string
 
 const (
-	CompactionThreshold uint64 = 1024 * 1024
-
 	SET    CommandType = "SET"
 	DELETE CommandType = "DELETE"
 )
@@ -28,6 +28,7 @@ type Command struct {
 	Value string      `json:"value,omitempty"`
 }
 
+// CommandPos is a position used to find command in logFiles
 type CommandPos struct {
 	gen uint64
 	pos uint64
@@ -109,7 +110,77 @@ type KvsStore struct {
 	writer      *BufWriterWithPos
 	currentGen  uint64
 	index       *sync.Map
-	uncompacted uint64 // 记录重复的命令的字节数
+	unCompacted uint64 // record useless bytes
+}
+
+func NewKvsStore(path string) (KvsEngine, error) {
+	genList, err := sortedGenList(path)
+	if err != nil {
+		return nil, err
+	}
+	index := &sync.Map{}
+	readers := make(map[uint64]*BufReaderWithPos)
+	var uncompacted uint64
+	for _, gen := range genList {
+		file, err := os.Open(logPath(path, uint64(gen)))
+		if err != nil {
+			return nil, err
+		}
+		reader := NewBufReaderWithPos(file)
+		n, err := load(uint64(gen), reader, index)
+		if err != nil {
+			return nil, err
+		}
+		uncompacted += n
+		readers[uint64(gen)] = reader
+	}
+	currentGen := 1
+	if len(genList) > 0 {
+		currentGen = genList[len(genList)-1] + 1
+	}
+	writer, err := newLogFile(path, uint64(currentGen))
+	if err != nil {
+		return nil, err
+	}
+	kvsStore := &KvsStore{
+		path:        path,
+		readers:     readers,
+		writer:      writer,
+		currentGen:  uint64(currentGen),
+		index:       index,
+		unCompacted: uncompacted,
+	}
+	return kvsStore, nil
+}
+
+func load(gen uint64, reader *BufReaderWithPos, index *sync.Map) (uint64, error) {
+	var uncompacted, pos uint64
+	buf := bufio.NewReader(reader.file)
+	for bytes, err := buf.ReadSlice('}'); err == nil; bytes, err = buf.ReadSlice('}') {
+		newPos := pos + uint64(len(bytes))
+		cmd := &Command{}
+		err := json.Unmarshal(bytes, cmd)
+		if err != nil {
+			return 0, err
+		}
+		if cmd.Type == SET {
+			if val, ok := index.Load(cmd.Key); ok {
+				uncompacted += val.(*CommandPos).len
+			}
+			cmdPos := NewCommandPos(gen, pos, newPos)
+			index.Store(cmd.Key, cmdPos)
+		}
+		if cmd.Type == DELETE {
+			if val, ok := index.Load(cmd.Key); ok {
+				uncompacted += val.(*CommandPos).len
+				index.Delete(cmd.Key)
+			}
+			// Remove命令在下一次压缩中删除，因此将长度置为未压缩
+			uncompacted += newPos - pos
+		}
+		pos = newPos
+	}
+	return uncompacted, nil
 }
 
 func logPath(path string, gen uint64) string {
@@ -151,6 +222,9 @@ func sortedGenList(path string) ([]int, error) {
 	return genList, nil
 }
 
+// compact logFiles which will
+// replace all the stale logs with compactionGen
+// and update kvs.currentGen += 2
 func (kvs *KvsStore) compact() (err error) {
 	compactionGen := kvs.currentGen + 1
 	kvs.currentGen += 2
@@ -162,35 +236,24 @@ func (kvs *KvsStore) compact() (err error) {
 	if err != nil {
 		return err
 	}
-
 	kvs.index.Range(func(key, value interface{}) bool {
-
-		cmdPos := value.(CommandPos)
+		cmdPos := value.(*CommandPos)
 		reader := kvs.readers[cmdPos.gen]
-
 		if reader.pos != cmdPos.pos {
-			err = reader.seek(cmdPos.pos)
-			if err != nil {
+			if err = reader.seek(cmdPos.pos); err != nil {
 				return false
 			}
 		}
-
 		buf := make([]byte, cmdPos.len)
-
-		err = reader.read(buf)
-		if err != nil {
+		if err = reader.read(buf); err != nil {
 			return false
 		}
-
-		err = compactionWriter.write(buf)
-		if err != nil {
+		if err = compactionWriter.write(buf); err != nil {
 			return false
 		}
 		return true
 	})
-
-	err = compactionWriter.flush()
-	if err != nil {
+	if err = compactionWriter.flush(); err != nil {
 		return err
 	}
 
@@ -200,16 +263,23 @@ func (kvs *KvsStore) compact() (err error) {
 		return err
 	}
 	for _, gen := range genList {
-		err := os.Remove(logPath(kvs.path, uint64(gen)))
-		if err != nil {
-			return err
+		if uint64(gen) < compactionGen {
+			err := os.Remove(logPath(kvs.path, uint64(gen)))
+			if err != nil {
+				return err
+			}
 		}
 	}
-	kvs.uncompacted = 0
+	kvs.unCompacted = 0
 	return nil
 }
 
+// Set will write new kv-set to current kvs.writer
+// and then update kvs.index with CommandPos
+// if index has older version update kvs.unCompacted
 func (kvs *KvsStore) Set(key, value string) error {
+	kvs.mutex.Lock()
+	defer kvs.mutex.Unlock()
 	cmd := &Command{SET, key, value}
 	pos := kvs.writer.pos
 	bytes, err := json.Marshal(cmd)
@@ -222,15 +292,13 @@ func (kvs *KvsStore) Set(key, value string) error {
 	if err = kvs.writer.flush(); err != nil {
 		return err
 	}
-
 	if val, ok := kvs.index.Load(key); ok {
-		// 记录重复的命令字节数
-		kvs.uncompacted += val.(*CommandPos).len
-	} else {
-		commandPos := NewCommandPos(kvs.currentGen, pos, kvs.writer.pos)
-		kvs.index.Store(key, commandPos)
+		kvs.unCompacted += val.(*CommandPos).len
 	}
-	if kvs.uncompacted > CompactionThreshold {
+	// always update the index with new kvSet
+	commandPos := NewCommandPos(kvs.currentGen, pos, kvs.writer.pos)
+	kvs.index.Store(key, commandPos)
+	if kvs.unCompacted > CompactionThreshold {
 		_ = kvs.compact()
 	}
 	return nil
@@ -256,8 +324,8 @@ func (kvs *KvsStore) Remove(key string) error {
 		}
 		kvs.index.Delete(key)
 		// Remove命令在下一次压缩中删除，因此将长度置为未压缩
-		kvs.uncompacted += kvs.writer.pos - pos
-		if kvs.uncompacted > CompactionThreshold {
+		kvs.unCompacted += kvs.writer.pos - pos
+		if kvs.unCompacted > CompactionThreshold {
 			_ = kvs.compact()
 		}
 	} else {
