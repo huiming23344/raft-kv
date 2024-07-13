@@ -1,0 +1,8 @@
+server:
+  name: gokvs
+  addr: 127.0.0.1:2317
+  data-dir: './node1'
+
+raft:
+  bootstrap: true
+  addr: 127.0.0.1:2318
