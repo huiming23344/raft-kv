@@ -47,6 +47,7 @@ func (p *Parse) NextString() (string, error) {
 	}
 }
 
+// Finish ends a parse from frame
 func (p *Parse) Finish() error {
 	if p.next() == nil {
 		return nil
