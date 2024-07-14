@@ -20,6 +20,10 @@ func NewConnection(conn *net.TCPConn) Connection {
 	}
 }
 
+func (c *Connection) RemoteAddr() string {
+	return c.conn.RemoteAddr().String()
+}
+
 func (c *Connection) ReadFrame() (*Frame, error) {
 	for {
 		// 1.当缓存区有足够正常的数据，则解析一个Frame返回
