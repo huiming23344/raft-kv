@@ -1,4 +1,4 @@
-package kv_raft
+package main
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/luo/kv-raft/config"
 	"github.com/luo/kv-raft/engines"
 	"github.com/luo/kv-raft/network"
+	"github.com/luo/kv-raft/raft"
 	"io"
 	"log"
 	"net"
