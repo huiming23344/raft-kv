@@ -2,6 +2,7 @@ package raft
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb"
@@ -117,7 +118,15 @@ func (r *Node) Member(cm *cmd.Member) *network.Frame {
 	}
 	switch cm.Opt() {
 	case cmd.MemberAdd:
-		if err := r.raft.AddVoter(raft.ServerID(cm.ServerID()), raft.ServerAddress(cm.Address()), 0, 0).Error(); err != nil {
+		timeOut := time.Microsecond * 100
+		ok, err := canConnect(cm.Address(), timeOut)
+		if ok == false || err != nil {
+			return &network.Frame{
+				Ftype: network.Error,
+				Value: errors.New("not connected to raft").Error(),
+			}
+		}
+		if err := r.raft.AddVoter(raft.ServerID(cm.ServerID()), raft.ServerAddress(cm.Address()), 0, timeOut).Error(); err != nil {
 			return &network.Frame{
 				Ftype: network.Error,
 				Value: err.Error(),
@@ -163,4 +172,31 @@ func (r *Node) proxyInvoke(addr raft.ServerAddress, frame *network.Frame) (*netw
 		return nil, err
 	}
 	return client.Invoke(frame)
+}
+
+func canConnect(address string, timeout time.Duration) (bool, error) {
+	// 解析地址
+	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve tcp addr: %v", err)
+	}
+
+	// 设置连接超时
+	dialer := &net.Dialer{
+		Timeout: timeout,
+	}
+
+	// 尝试建立连接
+	conn, err := dialer.Dial("tcp", tcpAddr.String())
+	if err != nil {
+		// 连接失败
+		return false, nil
+	}
+	// 连接成功，不要忘记关闭连接
+	defer func(conn net.Conn) {
+		_ = conn.Close()
+	}(conn)
+
+	// 如果到达这里，说明连接成功
+	return true, nil
 }

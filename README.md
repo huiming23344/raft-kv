@@ -20,7 +20,8 @@ The \r\n (CRLF) is the protocol's terminator, which always separates its parts."
 | [Bulk strings](https://redis.io/docs/latest/develop/reference/protocol-spec/#bulk-strings)     | RESP2                    | Aggregate | `$`        |
 | [Arrays](https://redis.io/docs/latest/develop/reference/protocol-spec/#arrays)                 | RESP2                    | Aggregate | `*`        |
 
-
+## TODO
+add timeout
 
 
 
