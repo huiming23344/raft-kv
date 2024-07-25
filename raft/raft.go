@@ -36,7 +36,19 @@ func NewRaftNode(engine engines.KvsEngine) (*Node, error) {
 	raftConfig.NotifyCh = leaderNotifyCh
 
 	fsm := NewFSM(engine)
-	transport, err := newRaftTransport(cfg.Raft.Addr)
+	var raftAddr string
+	// init raft ip
+	if cfg.Raft.UseLoopBack {
+		raftAddr = fmt.Sprintf("127.0.0.1:%s", cfg.Raft.Port)
+	} else {
+		addrs, err := GetHostIPAddresses()
+		if err != nil {
+			return nil, err
+		}
+		addr := addrs[len(addrs)-1]
+		raftAddr = fmt.Sprintf("%s:%s", addr, cfg.Raft.Port)
+	}
+	transport, err := newRaftTransport(raftAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -226,4 +238,35 @@ func canConnect(address string, timeout time.Duration) (bool, error) {
 
 	// 如果到达这里，说明连接成功
 	return true, nil
+}
+
+func GetHostIPAddresses() ([]string, error) {
+	var addresses []string
+
+	// 获取所有网络接口
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	// 遍历网络接口
+	for _, i := range interfaces {
+		// 获取接口的地址列表
+		addrs, err := i.Addrs()
+		if err != nil {
+			return nil, err
+		}
+
+		// 遍历地址列表
+		for _, addr := range addrs {
+			// 检查是否为IPv4地址
+			ip := addr.(*net.IPNet)
+			if ip.IP.To4() != nil {
+				// 添加IPv4地址到结果列表
+				addresses = append(addresses, ip.IP.String())
+			}
+		}
+	}
+
+	return addresses, nil
 }
