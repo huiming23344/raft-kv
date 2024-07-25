@@ -2,7 +2,6 @@ package raft
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb"
@@ -11,9 +10,11 @@ import (
 	kvscfg "github.com/luo/kv-raft/config"
 	"github.com/luo/kv-raft/engines"
 	"github.com/luo/kv-raft/network"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -25,9 +26,8 @@ type Node struct {
 
 func NewRaftNode(engine engines.KvsEngine) (*Node, error) {
 	cfg := kvscfg.GlobalConfig()
-	dataDir := cfg.Server.DataDir
-	// serverID 对应 kvs 的地址
-	serverID := cfg.Server.Addr
+	dataDir := fmt.Sprintf("./nodes/node0")
+	serverID := "0"
 
 	raftConfig := raft.DefaultConfig()
 	raftConfig.ProtocolVersion = raft.ProtocolVersionMax
@@ -119,12 +119,39 @@ func (r *Node) Member(cm *cmd.Member) *network.Frame {
 	switch cm.Opt() {
 	case cmd.MemberAdd:
 		timeOut := time.Microsecond * 100
-		ok, err := canConnect(cm.Address(), timeOut)
-		if ok == false || err != nil {
-			return &network.Frame{
-				Ftype: network.Error,
-				Value: errors.New("not connected to raft").Error(),
+		// add node with loopback addr will get a new raft node
+		loRe := regexp.MustCompile(`^127\.0\.0\.1`)
+		if loRe.FindString(cm.Address()) != "" {
+			dataDir := fmt.Sprintf("./nodes/node%s", cm.ServerID())
+			engine, err := engines.NewKvsStore(dataDir)
+			var fsm = NewFSM(engine)
+			raftConfig := raft.DefaultConfig()
+			raftConfig.ProtocolVersion = raft.ProtocolVersionMax
+			raftConfig.LocalID = raft.ServerID(cm.ServerID())
+			LeaderNotifyCh := make(chan bool, 1)
+			raftConfig.NotifyCh = LeaderNotifyCh
+			if err != nil {
+				log.Fatal(err)
 			}
+			var transport, _ = newRaftTransport(cm.Address())
+			os.MkdirAll(dataDir, 0700)
+			// 忽略快照
+			snapshotStore := raft.NewDiscardSnapshotStore()
+			logStore, err := raftboltdb.NewBoltStore(filepath.Join(dataDir, "raft-log.bolt"))
+			stableStore, err := raftboltdb.NewBoltStore(filepath.Join(dataDir, "raft-stable.bolt"))
+
+			raftNode, err := raft.NewRaft(raftConfig, fsm, logStore, stableStore, snapshotStore, transport)
+
+			cfg := raft.Configuration{
+				Servers: []raft.Server{
+					{
+						Suffrage: raft.Voter,
+						ID:       raft.ServerID(cm.ServerID()),
+						Address:  transport.LocalAddr(),
+					},
+				},
+			}
+			raftNode.BootstrapCluster(cfg)
 		}
 		if err := r.raft.AddVoter(raft.ServerID(cm.ServerID()), raft.ServerAddress(cm.Address()), 0, timeOut).Error(); err != nil {
 			return &network.Frame{

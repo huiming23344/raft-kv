@@ -18,8 +18,7 @@ WORKDIR /app
 COPY --from=builder /src/kv-raft /app/kv-raft
 COPY conf/app-docker.yaml /app/app.yaml
 
-EXPOSE 2317
-EXPOSE 2318
+EXPOSE 2315
 
 # 设置执行权限
 RUN chmod +x /app/kv-raft

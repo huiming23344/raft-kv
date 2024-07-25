@@ -24,14 +24,14 @@ func serverConfigPath() string {
 
 type Config struct {
 	Server struct {
-		Name    string `yaml:"name"`
-		Addr    string `yaml:"addr"`
-		DataDir string `yaml:"data-dir"`
+		Name string `yaml:"name"`
+		Addr string `yaml:"addr"`
 	}
 
 	Raft struct {
-		Addr      string `yaml:"addr"`
-		Bootstrap bool   `yaml:"bootstrap"`
+		Port        string `yaml:"port"`
+		UseLoopBack bool   `yaml:"use-loopback"`
+		Bootstrap   bool   `yaml:"bootstrap"`
 	}
 }
 

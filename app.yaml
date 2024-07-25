@@ -1,8 +1,8 @@
 server:
-  name: gokvs
+  name: raft-kv
   addr: 127.0.0.1:2317
-  data-dir: './node1'
 
 raft:
+  use-loopback: false
   bootstrap: true
-  addr: 127.0.0.1:2318
+  port: 2318

@@ -24,7 +24,7 @@ func NewKvsServer() *KvsServer {
 		panic("load config fail: " + err.Error())
 	}
 	config.SetGlobalConfig(cfg)
-	engine, err := engines.NewKvsStore(cfg.Server.DataDir)
+	engine, err := engines.NewKvsStore("./nodes/node0")
 	if err != nil {
 		log.Fatal(err)
 	}
