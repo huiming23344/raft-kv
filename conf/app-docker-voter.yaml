@@ -1,10 +1,10 @@
 server:
   name: raft-kv
-  addr: 0.0.0.0:2317
+  addr: 0.0.0.0:2315
 
 
 raft:
-  is-voter: false
+  is-voter: true
   use-loopback: false
   bootstrap: true
-  port: 2318
+  port: 2316

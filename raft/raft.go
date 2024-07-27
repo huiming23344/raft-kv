@@ -70,20 +70,37 @@ func NewRaftNode(engine engines.KvsEngine) (*Node, error) {
 		return nil, err
 	}
 	if cfg.Raft.Bootstrap {
-		cfg := raft.Configuration{
-			Servers: []raft.Server{
-				{
-					ID:      raft.ServerID(serverID),
-					Address: transport.LocalAddr(),
-				},
-			},
-		}
-		raftNode.BootstrapCluster(cfg)
+		nodeBootstrap(raftNode, cfg.Raft.Voter, serverID, raftAddr)
 	}
 	return &Node{
 		raft:     raftNode,
 		serverID: raft.ServerID(serverID),
 	}, nil
+}
+
+func nodeBootstrap(node *raft.Raft, isVoter bool, id string, addr string) {
+	if isVoter {
+		cfg := raft.Configuration{
+			Servers: []raft.Server{
+				{
+					Suffrage: raft.Nonvoter,
+					ID:       raft.ServerID(id),
+					Address:  raft.ServerAddress(addr),
+				},
+			},
+		}
+		node.BootstrapCluster(cfg)
+	} else {
+		cfg := raft.Configuration{
+			Servers: []raft.Server{
+				{
+					ID:      raft.ServerID(id),
+					Address: raft.ServerAddress(addr),
+				},
+			},
+		}
+		node.BootstrapCluster(cfg)
+	}
 }
 
 func newRaftTransport(addr string) (*raft.NetworkTransport, error) {
@@ -153,17 +170,7 @@ func (r *Node) Member(cm *cmd.Member) *network.Frame {
 			stableStore, err := raftboltdb.NewBoltStore(filepath.Join(dataDir, "raft-stable.bolt"))
 
 			raftNode, err := raft.NewRaft(raftConfig, fsm, logStore, stableStore, snapshotStore, transport)
-
-			cfg := raft.Configuration{
-				Servers: []raft.Server{
-					{
-						Suffrage: raft.Voter,
-						ID:       raft.ServerID(cm.ServerID()),
-						Address:  transport.LocalAddr(),
-					},
-				},
-			}
-			raftNode.BootstrapCluster(cfg)
+			nodeBootstrap(raftNode, true, cm.ServerID(), cm.Address())
 		}
 		if err := r.raft.AddVoter(raft.ServerID(cm.ServerID()), raft.ServerAddress(cm.Address()), 0, timeOut).Error(); err != nil {
 			return &network.Frame{

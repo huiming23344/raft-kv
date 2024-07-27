@@ -29,6 +29,7 @@ type Config struct {
 	}
 
 	Raft struct {
+		Voter       bool   `yaml:"is-voter"`
 		Port        string `yaml:"port"`
 		UseLoopBack bool   `yaml:"use-loopback"`
 		Bootstrap   bool   `yaml:"bootstrap"`

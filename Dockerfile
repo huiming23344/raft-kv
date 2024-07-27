@@ -16,7 +16,7 @@ WORKDIR /app
 
 # 从builder镜像中复制编译好的二进制文件
 COPY --from=builder /src/kv-raft /app/kv-raft
-COPY conf/app-docker.yaml /app/app.yaml
+COPY conf/app-docker-voter.yaml /app/app.yaml
 
 EXPOSE 2315
 
