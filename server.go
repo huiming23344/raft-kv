@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/luo/kv-raft/cmd"
 	"github.com/luo/kv-raft/config"
-	"github.com/luo/kv-raft/engines"
+	dbs "github.com/luo/kv-raft/db"
 	"github.com/luo/kv-raft/network"
 	"github.com/luo/kv-raft/raft"
 	"io"
@@ -14,7 +14,7 @@ import (
 
 type KvsServer struct {
 	addr string
-	db   engines.KvsEngine
+	db   dbs.DB
 	raft *raft.Node
 }
 
@@ -24,17 +24,17 @@ func NewKvsServer() *KvsServer {
 		panic("load config fail: " + err.Error())
 	}
 	config.SetGlobalConfig(cfg)
-	engine, err := engines.NewKvsStore("./nodes/node0")
+	db, err := dbs.NewDB("./nodes/node0", cfg.Server.CacheCap)
 	if err != nil {
 		log.Fatal(err)
 	}
-	raftNode, err := raft.NewRaftNode(engine)
+	raftNode, err := raft.NewRaftNode(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return &KvsServer{
 		addr: cfg.Server.Addr,
-		db:   engine,
+		db:   db,
 		raft: raftNode,
 	}
 }
@@ -63,7 +63,7 @@ func (s *KvsServer) Serve() error {
 }
 
 type Handler struct {
-	db         engines.KvsEngine
+	db         dbs.DB
 	connection network.Connection
 	raft       *raft.Node
 }

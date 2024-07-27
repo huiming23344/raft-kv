@@ -3,18 +3,18 @@ package raft
 import (
 	"github.com/hashicorp/raft"
 	"github.com/luo/kv-raft/cmd"
-	"github.com/luo/kv-raft/engines"
+	dbs "github.com/luo/kv-raft/db"
 	"github.com/luo/kv-raft/network"
 	"io"
 )
 
 type FSM struct {
-	db engines.KvsEngine
+	db dbs.DB
 }
 
-func NewFSM(engine engines.KvsEngine) raft.FSM {
+func NewFSM(db dbs.DB) raft.FSM {
 	return &FSM{
-		db: engine,
+		db: db,
 	}
 }
 

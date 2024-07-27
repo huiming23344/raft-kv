@@ -1,6 +1,7 @@
 server:
   name: raft-kv
   addr: 127.0.0.1:2317
+  cache-cap: 128
 
 raft:
   is-voter: false

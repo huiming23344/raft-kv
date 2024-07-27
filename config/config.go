@@ -24,8 +24,9 @@ func serverConfigPath() string {
 
 type Config struct {
 	Server struct {
-		Name string `yaml:"name"`
-		Addr string `yaml:"addr"`
+		Name     string `yaml:"name"`
+		Addr     string `yaml:"addr"`
+		CacheCap int    `yaml:"cache-cap"`
 	}
 
 	Raft struct {

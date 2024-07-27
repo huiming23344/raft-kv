@@ -8,7 +8,7 @@ import (
 	kvscli "github.com/luo/kv-raft/client"
 	"github.com/luo/kv-raft/cmd"
 	kvscfg "github.com/luo/kv-raft/config"
-	"github.com/luo/kv-raft/engines"
+	engines2 "github.com/luo/kv-raft/db/engines"
 	"github.com/luo/kv-raft/network"
 	"log"
 	"net"
@@ -24,7 +24,7 @@ type Node struct {
 	serverID raft.ServerID
 }
 
-func NewRaftNode(engine engines.KvsEngine) (*Node, error) {
+func NewRaftNode(engine engines2.KvsEngine) (*Node, error) {
 	cfg := kvscfg.GlobalConfig()
 	dataDir := fmt.Sprintf("./nodes/node0")
 	serverID := "0"
@@ -152,7 +152,7 @@ func (r *Node) Member(cm *cmd.Member) *network.Frame {
 		loRe := regexp.MustCompile(`^127\.0\.0\.1`)
 		if loRe.FindString(cm.Address()) != "" {
 			dataDir := fmt.Sprintf("./nodes/node%s", cm.ServerID())
-			engine, err := engines.NewKvsStore(dataDir)
+			engine, err := engines2.NewKvsStore(dataDir)
 			var fsm = NewFSM(engine)
 			raftConfig := raft.DefaultConfig()
 			raftConfig.ProtocolVersion = raft.ProtocolVersionMax
@@ -218,33 +218,6 @@ func (r *Node) proxyInvoke(addr raft.ServerAddress, frame *network.Frame) (*netw
 		return nil, err
 	}
 	return client.Invoke(frame)
-}
-
-func canConnect(address string, timeout time.Duration) (bool, error) {
-	// 解析地址
-	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
-	if err != nil {
-		return false, fmt.Errorf("failed to resolve tcp addr: %v", err)
-	}
-
-	// 设置连接超时
-	dialer := &net.Dialer{
-		Timeout: timeout,
-	}
-
-	// 尝试建立连接
-	conn, err := dialer.Dial("tcp", tcpAddr.String())
-	if err != nil {
-		// 连接失败
-		return false, nil
-	}
-	// 连接成功，不要忘记关闭连接
-	defer func(conn net.Conn) {
-		_ = conn.Close()
-	}(conn)
-
-	// 如果到达这里，说明连接成功
-	return true, nil
 }
 
 func GetHostIPAddresses() ([]string, error) {
