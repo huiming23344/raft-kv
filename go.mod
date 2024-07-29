@@ -1,4 +1,4 @@
-module github.com/luo/kv-raft
+module github.com/huiming23344/kv-raft
 
 go 1.21.3
 
