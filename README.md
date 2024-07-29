@@ -1,7 +1,7 @@
 # raft-kv
 [![Go Report Card](https://goreportcard.com/badge/github.com/huiming23344/kv-raft)](https://goreportcard.com/report/github.com/huiming23344/kv-raft)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/huiming23344/kv-raft/blob/master/LICENSE)
-[![Build](https://github.com/huiming23344/kv-raft/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/huiming23344/kv-raft/actions/workflow)
+[![Build](https://github.com/huiming23344/kv-raft/actions/workflows/build.yaml/badge.svg?branch=master)](https://github.com/huiming23344/kv-raft/actions/workflow)
 
 基于raft的分布式kv存储系统
 
