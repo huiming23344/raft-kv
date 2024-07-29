@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	kvscli "github.com/luo/kv-raft/client"
+	kvscli "github.com/huiming23344/kv-raft/client"
 	"github.com/spf13/cobra"
 	"log"
 )

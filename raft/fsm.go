@@ -2,9 +2,9 @@ package raft
 
 import (
 	"github.com/hashicorp/raft"
-	"github.com/luo/kv-raft/cmd"
-	dbs "github.com/luo/kv-raft/db"
-	"github.com/luo/kv-raft/network"
+	"github.com/huiming23344/kv-raft/cmd"
+	dbs "github.com/huiming23344/kv-raft/db"
+	"github.com/huiming23344/kv-raft/network"
 	"io"
 )
 

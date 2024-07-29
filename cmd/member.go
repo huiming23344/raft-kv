@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/luo/kv-raft/db/engines"
-	"github.com/luo/kv-raft/network"
+	"github.com/huiming23344/kv-raft/db/engines"
+	"github.com/huiming23344/kv-raft/network"
 )
 
 type Member struct {

@@ -2,8 +2,8 @@ package client
 
 import (
 	"errors"
-	"github.com/luo/kv-raft/cmd"
-	"github.com/luo/kv-raft/network"
+	"github.com/huiming23344/kv-raft/cmd"
+	"github.com/huiming23344/kv-raft/network"
 	"net"
 	"strconv"
 )

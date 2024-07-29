@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/luo/kv-raft/cmd"
-	"github.com/luo/kv-raft/config"
-	dbs "github.com/luo/kv-raft/db"
-	"github.com/luo/kv-raft/network"
-	"github.com/luo/kv-raft/raft"
+	"github.com/huiming23344/kv-raft/cmd"
+	"github.com/huiming23344/kv-raft/config"
+	dbs "github.com/huiming23344/kv-raft/db"
+	"github.com/huiming23344/kv-raft/network"
+	"github.com/huiming23344/kv-raft/raft"
 	"io"
 	"log"
 	"net"
