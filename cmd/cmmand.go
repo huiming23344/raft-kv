@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	SET    = "set"
-	GET    = "get"
-	DELETE = "del"
+	SET    = "SET"
+	GET    = "GET"
+	DELETE = "DEL"
 	MEMBER = "member"
+	CONFIG = "CONFIG"
 )
 
 const (
@@ -42,6 +43,8 @@ func FromFrame(frame *network.Frame) (Command, error) {
 		cmd, err = parseDeleteFrame(parse)
 	case MEMBER:
 		cmd, err = parseMemberFrame(parse)
+	case CONFIG:
+		cmd, err = parseConfigFrame(parse)
 	default:
 		err = fmt.Errorf("unknown command %s", commandName)
 	}

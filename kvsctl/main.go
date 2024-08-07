@@ -30,7 +30,7 @@ func connectServer(cmd *cobra.Command) *kvscli.Client {
 
 func NewSetCommand() *cobra.Command {
 	cc := &cobra.Command{
-		Use:   "set",
+		Use:   "SET",
 		Short: "Set key to hold the string value",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -46,7 +46,7 @@ func NewSetCommand() *cobra.Command {
 
 func NewGetCommand() *cobra.Command {
 	cc := &cobra.Command{
-		Use:   "get",
+		Use:   "GET",
 		Short: "Get the value of key",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -62,7 +62,7 @@ func NewGetCommand() *cobra.Command {
 
 func NewDeleteCommand() *cobra.Command {
 	cc := &cobra.Command{
-		Use:   "del",
+		Use:   "DEL",
 		Short: "Delete the value of key",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {

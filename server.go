@@ -95,6 +95,8 @@ func (h *Handler) run() {
 			rspFrame = h.raft.Apply(frame)
 		case cmd.MEMBER:
 			rspFrame = h.raft.Member(command.(*cmd.Member))
+		case cmd.CONFIG:
+			rspFrame = command.Apply(h.db)
 		}
 		// 3.回包
 		if err := h.connection.WriteFrame(rspFrame); err != nil {
