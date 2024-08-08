@@ -38,11 +38,11 @@ func (f *FSM) Apply(logEntry *raft.Log) interface{} {
 }
 
 func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
-	// nothing to do
+	// todo: create snapshot
 	return nil, nil
 }
 
 func (f *FSM) Restore(io.ReadCloser) error {
-	// nothing to do
+	// todo: restore from snapshot
 	return nil
 }

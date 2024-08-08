@@ -23,6 +23,25 @@ The \r\n (CRLF) is the protocol's terminator, which always separates its parts."
 | [Bulk strings](https://redis.io/docs/latest/develop/reference/protocol-spec/#bulk-strings)     | RESP2                    | Aggregate | `$`        |
 | [Arrays](https://redis.io/docs/latest/develop/reference/protocol-spec/#arrays)                 | RESP2                    | Aggregate | `*`        |
 
+## BenchMark
+
+test with redis-benchmark
+
+```
+====== SET ======
+  10000 requests completed in 6.95 seconds
+  50 parallel clients
+  3 bytes payload
+  keep alive: 1
+  multi-thread: no
+  
+Summary:
+  throughput summary: 1621.27 requests per second
+  latency summary (msec):
+          avg       min       p50       p95       p99       max
+       30.675     5.808    29.455    45.631    53.087   254.079
+```
+
 ## Running
 
 start the server
