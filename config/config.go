@@ -35,6 +35,15 @@ type Config struct {
 		UseLoopBack bool   `yaml:"use-loopback"`
 		Bootstrap   bool   `yaml:"bootstrap"`
 	}
+
+	Lsm struct {
+		DataDir          string `yaml:"data-dir"`
+		Level0Size       int    `yaml:"level0-size"`
+		PartSize         int    `yaml:"part-size"`
+		Threshold        int    `yaml:"threshold"`
+		CheckInterval    int    `yaml:"check-interval"`
+		CompressInterval int    `yaml:"compress-interval"`
+	}
 }
 
 var globalConfig atomic.Value

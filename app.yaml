@@ -8,3 +8,10 @@ raft:
   use-loopback: false
   bootstrap: true
   port: 2318
+
+lsm:
+  level0-size:  100
+  part-size:  4
+  threshold:  3000
+  check-interval: 5
+  compress-interval: 10

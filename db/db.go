@@ -27,10 +27,7 @@ type db struct {
 }
 
 func NewDB(path string, cacheCap int) (DB, error) {
-	engine, err := engines.NewKvsStore(path)
-	if err != nil {
-		return nil, err
-	}
+	engine := engines.NewLsmEngine(path)
 	myCache := cache.NewLRUCache(cacheCap)
 	return db{
 		engine: engine,
